@@ -10,34 +10,23 @@ enum TipoEntidade {
 }
 
 public class Main {
-
     static ArrayList<Pais> listaPaises = new ArrayList<>();
     static ArrayList<Cidade> listaCidades = new ArrayList<>();
     static ArrayList<DadosDemograficos> listaDados = new ArrayList<>();
-    static ArrayList<String> linhasComErro = new ArrayList<>();
+    static ArrayList<String> sumarioErros = new ArrayList<>();
 
     public static void main(String[] args) {
-        System.out.println("A ler ficheiros...");
-        boolean sucesso = parseFiles(new File("."));
-
-        if (!sucesso) {
-            System.out.println("Erro: Não foi possível encontrar os ficheiros .csv na raiz!");
-            return;
+        if (args != null && args.length > 0) {
+            parseFiles(new File(args[0]));
+        } else {
+            parseFiles(new File("."));
         }
-
-        ArrayList<Pais> paises = getObjects(TipoEntidade.PAIS);
-        System.out.println("Países lidos: " + paises.size());
-        if (!paises.isEmpty()) {
-            System.out.println("Primeiro país: " + paises.get(0)); // Testa o teu toString()
+        for (String s : sumarioErros) {
+            System.out.println(s);
         }
-
-        ArrayList<Cidade> cidades = getObjects(TipoEntidade.CIDADE);
-        System.out.println("Cidades lidas: " + cidades.size());
-
-        ArrayList<String> erros = getObjects(TipoEntidade.INPUT_INVALIDO);
-        System.out.println("Linhas com erro: " + erros.size());
-        for (String erro : erros) {
-            System.out.println(" -> Erro na linha: " + erro);
+        ArrayList<Pais> ps = listaPaises;
+        for (int i = 0; i < ps.size() && i < 10; i++) {
+            System.out.println(ps.get(i).toString());
         }
     }
 
@@ -45,34 +34,164 @@ public class Main {
         listaPaises.clear();
         listaCidades.clear();
         listaDados.clear();
-        linhasComErro.clear();
+        sumarioErros.clear();
+        boolean leuPaises = lerPaises(folder);
+        boolean leuCidades = lerCidades(folder);
+        boolean leuDados = lerDados(folder);
 
-        return lerPaises(folder) && lerCidades(folder) && lerPopulacao(folder);
+        return leuPaises && leuCidades && leuDados;
+    }
+
+    private static String[] splitCsv(String line, int expectedFields) {
+        ArrayList<String> fields = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                // toggle quote state
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                fields.add(cur.toString());
+                cur.setLength(0);
+            } else {
+                cur.append(c);
+            }
+        }
+        fields.add(cur.toString());
+
+        while (expectedFields > 0 && fields.size() < expectedFields) {
+            fields.add("");
+        }
+
+        return fields.toArray(new String[0]);
+    }
+
+    private static boolean isAlpha(String s) {
+        if (s == null) return false;
+        s = s.trim();
+        if (s.isEmpty()) return false;
+        for (int i = 0; i < s.length(); i++) {
+            if (!Character.isLetter(s.charAt(i))) return false;
+        }
+        return true;
     }
 
     private static boolean lerPaises(File folder) {
-        File ficheiro = new File(folder, "paises.csv");
-        try (Scanner leitor = new Scanner(ficheiro)) {
-            if (leitor.hasNextLine()) leitor.nextLine(); // Ignora o cabeçalho
+        File f = new File(folder, "paises.csv");
+        int ok = 0;
+        int erro = 0;
+        int totalLinhasDados = 0;
 
-            while (leitor.hasNextLine()) {
-                String linha = leitor.nextLine();
-                String[] partes = linha.split(",");
+        try (Scanner s = new Scanner(f)) {
+            String firstLine = null;
+            while (s.hasNextLine()) {
+                firstLine = s.nextLine();
+                if (!firstLine.trim().isEmpty()) break;
+                firstLine = null;
+            }
 
-                if (partes.length == 4) {
+            if (firstLine != null) {
+                String[] partesFirst = splitCsv(firstLine, 4);
+                boolean firstIsHeader = true;
+                if (partesFirst.length >= 1) {
+                    String idCandidate = partesFirst[0].trim();
                     try {
-                        int id = Integer.parseInt(partes[0].trim());
-                        String alfa2 = partes[1].trim();
-                        String alfa3 = partes[2].trim();
-                        String nome = partes[3].trim();
-                        listaPaises.add(new Pais(id, alfa2, alfa3, nome));
-                    } catch (NumberFormatException e) {
-                        linhasComErro.add(linha);
+                        Integer.parseInt(idCandidate);
+                        firstIsHeader = false;
+                    } catch (NumberFormatException ex) {
+                        firstIsHeader = true;
                     }
-                } else {
-                    linhasComErro.add(linha);
+                }
+
+                if (!firstIsHeader) {
+                    String linha = firstLine;
+                    totalLinhasDados++;
+                    String[] partes = splitCsv(linha, 4);
+                    if (partes.length == 4) {
+                        try {
+                            String idStr = partes[0].trim();
+                            String a2 = partes[1].trim();
+                            String a3 = partes[2].trim();
+                            String nome = partes[3].trim();
+
+                            if (!idStr.isEmpty() && !a2.isEmpty() && !a3.isEmpty() && !nome.isEmpty()
+                                    && a2.length() == 2 && a3.length() == 3
+                                    && isAlpha(a2) && isAlpha(a3)) {
+                                int id = Integer.parseInt(idStr);
+                                if (id > 0) {
+                                    boolean duplicado = false;
+                                    for (Pais p : listaPaises) {
+                                        if (p.id == id || p.alfa2.equalsIgnoreCase(a2) || p.alfa3.equalsIgnoreCase(a3)) {
+                                            duplicado = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!duplicado) {
+                                        listaPaises.add(new Pais(id, a2, a3, nome));
+                                        ok++;
+                                    } else {
+                                        erro++;
+                                    }
+                                } else {
+                                    erro++;
+                                }
+                            } else {
+                                erro++;
+                            }
+                        } catch (NumberFormatException e) {
+                            erro++;
+                        }
+                    } else {
+                        erro++;
+                    }
                 }
             }
+
+            while (s.hasNextLine()) {
+                String linha = s.nextLine();
+                if (linha.trim().isEmpty()) continue;
+                totalLinhasDados++;
+                String[] partes = splitCsv(linha, 4);
+                if (partes.length == 4) {
+                    try {
+                        String idStr = partes[0].trim();
+                        String a2 = partes[1].trim();
+                        String a3 = partes[2].trim();
+                        String nome = partes[3].trim();
+
+                        if (!idStr.isEmpty() && !a2.isEmpty() && !a3.isEmpty() && !nome.isEmpty()
+                                && a2.length() == 2 && a3.length() == 3
+                                && isAlpha(a2) && isAlpha(a3)) {
+                            int id = Integer.parseInt(idStr);
+                            if (id > 0) {
+                                boolean duplicado = false;
+                                for (Pais p : listaPaises) {
+                                    if (p.id == id || p.alfa2.equalsIgnoreCase(a2) || p.alfa3.equalsIgnoreCase(a3)) {
+                                        duplicado = true;
+                                        break;
+                                    }
+                                }
+                                if (!duplicado) {
+                                    listaPaises.add(new Pais(id, a2, a3, nome));
+                                    ok++;
+                                } else {
+                                    erro++;
+                                }
+                            } else {
+                                erro++;
+                            }
+                        } else {
+                            erro++;
+                        }
+                    } catch (NumberFormatException e) {
+                        erro++;
+                    }
+                } else {
+                    erro++;
+                }
+            }
+            sumarioErros.add(0, "paises.csv | " + ok + " | " + erro + " | " + totalLinhasDados);
             return true;
         } catch (FileNotFoundException e) {
             return false;
@@ -80,70 +199,168 @@ public class Main {
     }
 
     private static boolean lerCidades(File folder) {
-        File ficheiro = new File(folder, "cidades.csv");
-        try (Scanner leitor = new Scanner(ficheiro)) {
-            if (leitor.hasNextLine()) leitor.nextLine();
+        File f = new File(folder, "cidades.csv");
+        int ok = 0;
+        int erro = 0;
+        int totalLinhasDados = 0;
 
-            while (leitor.hasNextLine()) {
-                String linha = leitor.nextLine();
-                String[] partes = linha.split(",", -1);
+        try (Scanner s = new Scanner(f)) {
+            String firstLine = null;
+            while (s.hasNextLine()) {
+                firstLine = s.nextLine();
+                if (!firstLine.trim().isEmpty()) break;
+                firstLine = null;
+            }
 
-                boolean temCamposVazios = false;
-                for (String parte : partes) {
-                    if (parte.trim().isEmpty()) {
-                        temCamposVazios = true;
-                        break;
-                    }
+            if (firstLine != null) {
+                String[] partesFirst = splitCsv(firstLine, 6);
+                boolean firstIsHeader = false;
+                if (partesFirst.length >= 1) {
+                    String first = partesFirst[0].trim();
+                    boolean isAlpha2 = first.length() == 2 && isAlpha(first);
+                    boolean isInt = false;
+                    try { Integer.parseInt(first); isInt = true; } catch (Exception ex) { }
+                    if (!isAlpha2 && !isInt) firstIsHeader = true;
                 }
 
-                if (partes.length == 6 && !temCamposVazios) {
-                    try {
-                        String alfa2 = partes[0].trim();
-                        String nome = partes[1].trim();
-                        String regiao = partes[2].trim();
-                        int pop = (int) Double.parseDouble(partes[3].trim());
-                        double lat = Double.parseDouble(partes[4].trim());
-                        double lon = Double.parseDouble(partes[5].trim());
+                if (!firstIsHeader) {
+                    String linha = firstLine;
+                    totalLinhasDados++;
+                    String[] partes = splitCsv(linha, 6);
+                    if (partes.length == 6) {
+                        try {
+                            String a2orId = partes[0].trim();
+                            String nome = partes[1].trim();
+                            String popStr = partes[3].trim();
 
-                        listaCidades.add(new Cidade(alfa2, nome, regiao, pop, lat, lon));
-                    } catch (NumberFormatException e) {
-                        linhasComErro.add(linha);
-                    }
-                } else {
-                    linhasComErro.add(linha);
+                            String a2 = null;
+                            if (!a2orId.isEmpty() && a2orId.length() == 2 && isAlpha(a2orId)) {
+                                a2 = a2orId;
+                            } else {
+                                try {
+                                    int cid = Integer.parseInt(a2orId);
+                                    for (Pais p : listaPaises) {
+                                        if (p.id == cid) { a2 = p.alfa2; break; }
+                                    }
+                                } catch (NumberFormatException ex) { a2 = null; }
+                            }
+
+                            if (a2 != null && !nome.isEmpty() && !popStr.isEmpty() && a2.length() == 2 && isAlpha(a2)) {
+                                double popD = Double.parseDouble(popStr);
+                                int pop = (int) popD;
+                                double lat = Double.parseDouble(partes[4].trim());
+                                double lon = Double.parseDouble(partes[5].trim());
+                                listaCidades.add(new Cidade(a2, nome, partes[2].trim(), pop, lat, lon));
+                                ok++;
+                            } else {
+                                erro++;
+                            }
+                        } catch (NumberFormatException e) { erro++; }
+                    } else { erro++; }
                 }
             }
+
+            while (s.hasNextLine()) {
+                String linha = s.nextLine();
+                if (linha.trim().isEmpty()) continue;
+                totalLinhasDados++;
+                String[] partes = splitCsv(linha, 6);
+                if (partes.length == 6) {
+                    try {
+                        String a2orId = partes[0].trim();
+                        String nome = partes[1].trim();
+                        String popStr = partes[3].trim();
+
+                        String a2 = null;
+                        if (!a2orId.isEmpty() && a2orId.length() == 2 && isAlpha(a2orId)) {
+                            a2 = a2orId;
+                        } else {
+                            try {
+                                int cid = Integer.parseInt(a2orId);
+                                for (Pais p : listaPaises) {
+                                    if (p.id == cid) { a2 = p.alfa2; break; }
+                                }
+                            } catch (NumberFormatException ex) { a2 = null; }
+                        }
+
+                        if (a2 != null && !popStr.isEmpty() && a2.length() == 2 && isAlpha(a2)) {
+                            double popD = Double.parseDouble(popStr);
+                            int pop = (int) popD;
+                            double lat = Double.parseDouble(partes[4].trim());
+                            double lon = Double.parseDouble(partes[5].trim());
+                            listaCidades.add(new Cidade(a2, nome, partes[2].trim(), pop, lat, lon));
+                            ok++;
+                        } else { erro++; }
+                    } catch (NumberFormatException e) { erro++; }
+                } else { erro++; }
+            }
+            sumarioErros.add("cidades.csv | " + ok + " | " + erro + " | " + totalLinhasDados);
             return true;
         } catch (FileNotFoundException e) {
             return false;
         }
     }
 
-    private static boolean lerPopulacao(File folder) {
-        File ficheiro = new File(folder, "populacao.csv");
-        try (Scanner leitor = new Scanner(ficheiro)) {
-            if (leitor.hasNextLine()) leitor.nextLine();
+    private static boolean lerDados(File folder) {
+        File f = new File(folder, "populacao.csv");
+        int ok = 0;
+        int erro = 0;
+        int totalLinhasDados = 0;
 
-            while (leitor.hasNextLine()) {
-                String linha = leitor.nextLine();
-                String[] partes = linha.split(",");
+        try (Scanner s = new Scanner(f)) {
+            String firstLine = null;
+            while (s.hasNextLine()) {
+                firstLine = s.nextLine();
+                if (!firstLine.trim().isEmpty()) break;
+                firstLine = null;
+            }
 
-                if (partes.length == 5) {
-                    try {
-                        int id = Integer.parseInt(partes[0].trim());
-                        int ano = Integer.parseInt(partes[1].trim());
-                        int popM = Integer.parseInt(partes[2].trim());
-                        int popF = Integer.parseInt(partes[3].trim());
-                        double densidade = Double.parseDouble(partes[4].trim());
+            if (firstLine != null) {
+                String[] partesFirst = splitCsv(firstLine, 5);
+                boolean firstIsHeader = true;
+                if (partesFirst.length >= 1) {
+                    String idCandidate = partesFirst[0].trim();
+                    try { Integer.parseInt(idCandidate); firstIsHeader = false; } catch (NumberFormatException ex) { firstIsHeader = true; }
+                }
 
-                        listaDados.add(new DadosDemograficos(id, ano, popM, popF, densidade));
-                    } catch (NumberFormatException e) {
-                        linhasComErro.add(linha);
-                    }
-                } else {
-                    linhasComErro.add(linha);
+                if (!firstIsHeader) {
+                    totalLinhasDados++;
+                    String[] partes = splitCsv(firstLine, 5);
+                    if (partes.length == 5) {
+                        try {
+                            listaDados.add(new DadosDemograficos(
+                                    Integer.parseInt(partes[0].trim()),
+                                    Integer.parseInt(partes[1].trim()),
+                                    Integer.parseInt(partes[2].trim()),
+                                    Integer.parseInt(partes[3].trim()),
+                                    Double.parseDouble(partes[4].trim())
+                            ));
+                            ok++;
+                        } catch (NumberFormatException e) { erro++; }
+                    } else { erro++; }
                 }
             }
+
+            while (s.hasNextLine()) {
+                String linha = s.nextLine();
+                if (linha.trim().isEmpty()) continue;
+                totalLinhasDados++;
+                String[] partes = splitCsv(linha, 5);
+                if (partes.length == 5) {
+                    try {
+                        listaDados.add(new DadosDemograficos(
+                                Integer.parseInt(partes[0].trim()),
+                                Integer.parseInt(partes[1].trim()),
+                                Integer.parseInt(partes[2].trim()),
+                                Integer.parseInt(partes[3].trim()),
+                                Double.parseDouble(partes[4].trim())
+                        ));
+                        ok++;
+                    } catch (NumberFormatException e) { erro++; }
+                } else { erro++; }
+            }
+
+            sumarioErros.add("populacao.csv | " + ok + " | " + erro + " | " + totalLinhasDados);
             return true;
         } catch (FileNotFoundException e) {
             return false;
@@ -153,13 +370,17 @@ public class Main {
     public static ArrayList getObjects(TipoEntidade tipo) {
         if (tipo == TipoEntidade.PAIS) {
             return listaPaises;
-        } else if (tipo == TipoEntidade.CIDADE) {
+        }
+        if (tipo == TipoEntidade.CIDADE) {
             return listaCidades;
-        } else if (tipo == TipoEntidade.DADOS_DEMOGRAFICOS) {
+        }
+        if (tipo == TipoEntidade.DADOS_DEMOGRAFICOS) {
             return listaDados;
-        } else if (tipo == TipoEntidade.INPUT_INVALIDO) {
-            return linhasComErro;
+        }
+        if (tipo == TipoEntidade.INPUT_INVALIDO) {
+            return sumarioErros;
         }
         return null;
     }
 }
+

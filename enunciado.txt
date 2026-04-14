@@ -1,0 +1,505 @@
+ Universidade Lusófona de Humanidades e Tecnologias
+                             Algoritmia e Estruturas de Dados
+                                          2025/26
+                                  DEISI World Meter
+                                   Primeira Parte
+                                        v1.0.0
+
+
+
+
+             Enunciado do projecto prático - Primeira Parte
+
+
+ Objectivo
+
+
+Este projecto tem como objectivo o desenvolvimento de uma aplicação (programa) em
+linguagem Java (versão Java 17) que seja capaz de receber e responder a pedidos de
+informações/estatísticas sobre uma base de dados de países, cidades e respectivos dados
+demográficos.
+
+Tendo em conta que um dos temas tratados em AED é a questão da eficiência das estruturas
+de dados e dos algoritmos, pretende-se que o programa desenvolvido seja não só
+funcionalmente correto, mas também que seja o mais rápido possível.
+
+Para alcançar estes objetivos, os alunos devem ter em conta tudo o que foram aprendendo em
+AED. Recomenda-se que façam abordagens exploratórias, fazendo medições dos tempos de
+execução de cada sub-passo do programa, no sentido de encontrar eventuais bottlenecks e
+que se dediquem a tentar melhorar os tempos de execução dos mesmos.
+
+                          “Make it work, Make it right, Make it fast.”
+
+
+
+
+                                                                                          1/11
+                    Universidade Lusófona de Humanidades e Tecnologias
+                              Algoritmia e Estruturas de Dados
+                                           2025/26
+                                   DEISI World Meter
+                                    Primeira Parte
+                                         v1.0.0
+
+
+O projecto está dividido em 2 partes:
+
+   ●​ Primeira Parte - apresentada no presente enunciado, incide na leitura dos ficheiros,
+      tratamento de erros e preparação de estruturas de memória;
+
+   ●​ Segunda Parte - os alunos deverão implementar um sistema interativo de “perguntas”
+      (queries) que permitam obter informação estatística sobre os dados contidos nos
+      ficheiros
+
+As 2 partes são de entrega obrigatória e terão prazos de entrega distintos. O não cumprimento
+dos prazos de entrega de qualquer uma das partes do projecto levará automaticamente à
+reprovação dos alunos na avaliação de primeira época da componente prática.
+
+
+
+
+ Objectivos - Primeira Parte
+
+
+Nesta primeira parte do projeto pretende-se que os alunos realizem as seguintes tarefas:
+
+   ●​ Definição e implementação de classes Java para representação das entidades da
+      realidade/domínio do problema;
+
+   ●​ Implementação da Leitura dos Ficheiros que são o input do programa;
+
+   ●​ Criação (instanciação) de objectos em memória, considerando os ficheiros lidos.
+
+Importante: Na primeira parte não haverá um grande foco à eficiência dos algoritmos. Embora
+existam testes com ficheiros grandes, ainda não serão executadas operações complexas sobre
+esses dados. Isto para dizer que o foco deverá ser, portanto, na execução correta do programa
+- garantir que funciona corretamente para quaisquer ficheiros que sejam usados como input.
+
+
+
+
+                                                                                             2/11
+                    Universidade Lusófona de Humanidades e Tecnologias
+                              Algoritmia e Estruturas de Dados
+                                           2025/26
+                                    DEISI World Meter
+                                     Primeira Parte
+                                          v1.0.0
+
+
+
+
+ Restrições Técnicas - Primeira Parte
+
+
+Nesta primeira parte do projecto, não é permitida a utilização da classe Set, Map ou qualquer
+uma das suas variantes (HashSet, TreeSet, HashMap, LinkedHashMap, TreeMap,
+ConcurrentHashMap, etc.). Também não é permitida a utilização de streams.
+
+Projetos que violem estas restrições terão nota zero.
+
+
+
+ Descrição do Projeto
+
+
+O projecto encontra-se descrito em vídeo.
+
+Poderão ser identificados erros/omissões no vídeo. Devem estar atentos à errata que está
+publicada no primeiro comentário do vídeo.
+
+Caso tenham dúvidas sobre o conteúdo do vídeo, devem colocá-las as mesmas no Zullip,
+indicando o timestamp do vídeo ao qual diz respeito a pergunta.
+
+No vídeo é referido o repositório onde podem encontrar os ficheiros csv que serão lidos pelo
+programa, mas deixamos aqui o link, para conveniência:
+
+https://github.com/ULHT-AED-2023-24/deisi_world_meter_files
+
+Errata do vídeo
+
+Após a produção do vídeo foi detectada a seguinte gralha:
+
+   ●​ Em 3:13, onde se diz "a população desse país" deveria ser "a população dessa cidade"
+
+
+
+
+                                                                                             3/11
+                    Universidade Lusófona de Humanidades e Tecnologias
+                              Algoritmia e Estruturas de Dados
+                                           2025/26
+                                   DEISI World Meter
+                                    Primeira Parte
+                                         v1.0.0
+
+
+
+
+ Formação dos grupos
+
+
+Dimensão do grupo
+
+Os projetos devem ser realizados em grupos de 2 alunos.
+
+Em situações excepcionais poderão ser aceites grupos de um aluno - quem o pretender fazer
+deve efectuar um pedido (justificado) aos docentes da cadeira através de e-mail. Alunos que
+entreguem individualmente sem terem um pedido aceite por um professor terão nota
+zero.
+
+Composição do grupo
+
+Os elementos do grupo devem pertencer à mesma turma prática. Isto facilita o
+acompanhamento do projeto por parte do professor respetivo.
+
+Os elementos do grupo devem ter um nível de conhecimento mais ou menos equivalente.
+
+Pela nossa experiência, quando há uma diferença grande de conhecimentos, o elemento mais
+fraco do grupo reprova na defesa. Queremos evitar isso.
+
+Seguem-se alguns exemplos de grupos cuja formação deve ser evitada:
+   -​ Um dos elementos reprovou a FP, mas o outro passou;
+   -​ Um dos elementos aprovou a FP com nota superior a 16 e o outro com nota inferior a
+      13;
+   -​ Um dos elementos passou todos/a maioria dos testes do Mini-teste 1 e o outro elemento
+      passou 1 ou menos testes.
+
+Os professores das práticas irão monitorizar a formação de grupos para garantir esta regra.
+
+Os grupos de alunos definidos para a primeira parte do projecto devem ser mantidos para a
+segunda parte do projecto. Não serão permitidas entradas de novos alunos nos grupos entre as
+duas partes do projecto.
+
+
+
+
+                                                                                              4/11
+                    Universidade Lusófona de Humanidades e Tecnologias
+                              Algoritmia e Estruturas de Dados
+                                           2025/26
+                                   DEISI World Meter
+                                    Primeira Parte
+                                         v1.0.0
+
+
+
+
+                                Testes Unitários Automáticos
+
+
+Nesta componente, os alunos devem implementar casos de teste unitários automáticos para
+garantir a qualidade do seu projecto.
+
+Por “caso de teste” entende-se a definição de uma função (anotada com @Test) que verifique
+se, para certo “input” é obtido o “output” / resultado esperado.
+
+Em particular, espera-se que os alunos criem pelo menos 5 funções de teste para cada um
+destes cenários:
+   ●​ Conversão para String de objetos contendo países (com id < 700)
+   ●​ Conversão para String de objetos contendo países (com id > 700)
+   ●​ Conversão para String de objetos contendo cidades
+   ●​ Leitura dos 3 ficheiros (sem erros) contendo pelo menos 2 países e 2 cidades para cada
+       país (através do parseFiles()) seguida de chamada ao getObjects() e
+       verificação do seu conteúdo.
+   ●​ Leitura dos 3 ficheiros com erros (linhas com elementos em falta) através do
+       parseFiles()seguida de chamada ao getObjects() com o
+       TipoEntidade.INPUT_INVALIDO e verificação do seu conteúdo.
+
+Testes vazios ou sem assert’s não serão considerados.
+
+Os casos de teste devem ser implementados usando JUnit 5. Recomenda-se a visualização do
+vídeo “Como desenvolver testes em JUnit” colocado no Moodle.
+
+Os testes devem ser implementados em uma ou mais classes com o nome TestXYZ (em que
+XYZ é o nome da classe que está a ser testada). Por exemplo, uma classe chamada
+ContaBancaria teria os seus testes numa classe chamada TestContaBancaria. As
+classes de teste devem estar no mesmo package que as classes que estão a ser testadas.
+
+Caso os testes unitários precisem de ler ficheiros (para carregamento inicial das estruturas de
+memória), esses ficheiros deverão ser obrigatoriamente colocados na pasta test-files, como se
+pode ver na estrutura abaixo:
+
+
+
+
+                                                                                           5/11
+                        Universidade Lusófona de Humanidades e Tecnologias
+                                  Algoritmia e Estruturas de Dados
+                                               2025/26
+                                     DEISI World Meter
+                                      Primeira Parte
+                                           v1.0.0
+
+
+
+    AUTHORS.txt     (contém linhas NUMERO_ALUNO;NOME_ALUNO, uma por aluno do grupo)​
+    + src​
+    |---+ pt​
+    |------+ ulusofona​
+    |------------+ aed
+
+    |----------------+ deisiworldmeter
+
+    |------------------- Main.java​
+    |------------------- ...       (outros ficheiros java do projecto)​
+    |------------------- TestXXX.java​
+    + test-files​
+    |--- paises.csv​
+    |--- ...
+
+
+
+Notem que os testes unitários irão ler os ficheiros de uma pasta diferente da usada pelo main().
+O main() lê da raiz enquanto os testes unitários lêem da pasta “test-files”. Para diferenciar,
+deverão fazer uso do parâmetro folder que é passado à função loadFiles.
+
+Apresenta-se um exemplo de cada:
+
+
+    public static void main(String args[]) {
+
+        boolean result = parseFiles(new File(“.”));
+
+        if (result) {
+           ...
+        }
+    }
+
+​
+
+
+    @Test
+    public void testBanana {
+
+        boolean result = Main.parseFiles(new File(“test-files”));
+
+        if (result) {
+           ...
+        }
+
+
+
+                                                                                            6/11
+                    Universidade Lusófona de Humanidades e Tecnologias
+                              Algoritmia e Estruturas de Dados
+                                           2025/26
+                                   DEISI World Meter
+                                    Primeira Parte
+                                         v1.0.0
+
+
+ }
+
+
+
+
+                                   Utilização do ChatGPT
+
+
+A utilização do ChatGPT ou LLMs similares é permitida.
+
+No entanto, tal como tem sido referido nas fichas práticas semanais, devem evitar recorrer ao
+ChatGPT constantemente. Comecem por tentar implementar sozinhos as funções do projeto
+antes de recorrerem ao ChatGPT. Lembrem-se que ele pode ser usado para vos apoiar na
+construção do programa e nunca para vos substituir completamente.
+
+Relembramos que haverá defesa individual do projeto (no final da parte 2), durante a qual
+terão que alterar o código do projeto. Se o código foi produzido pelo ChatGPT e não o
+entendem (embora funcione), provavelmente não conseguirão alterá-lo com sucesso.
+
+
+
+
+                                                                                           7/11
+                    Universidade Lusófona de Humanidades e Tecnologias
+                              Algoritmia e Estruturas de Dados
+                                           2025/26
+                                   DEISI World Meter
+                                    Primeira Parte
+                                         v1.0.0
+
+
+
+
+ Entrega
+
+
+
+
+ O que entregar
+
+
+Nesta primeira parte do projeto, os alunos têm de entregar:
+
+   ●​ Todo o código necessário para compilar e executar o projeto;​
+
+   ●​ Um ficheiro de texto (chamado AUTHORS.txt) contendo os nomes e números de aluno
+      dos membros do grupo).
+
+Nota importante: O programa submetido pelos alunos tem de compilar e executar no contexto
+do Drop Project. Projetos que não passem as fases de estrutura e de compilação serão
+considerados como não entregues.
+
+
+
+ Estrutura do projecto
+
+
+O projecto deve estar organizado na seguinte estrutura de pastas:
+
+
+ AUTHORS.txt    (contém linhas NUMERO_ALUNO;NOME_ALUNO, uma por aluno do grupo)​
+ + src​
+ |---+ pt​
+ |------+ ulusofona​
+ |---------+ aed​
+ |------------+ deisiworldmeter​
+ |--------------- Main.java​
+ |--------------- ...       (outros ficheiros java do projecto)
+
+
+
+
+                                                                                       8/11
+                       Universidade Lusófona de Humanidades e Tecnologias
+                                 Algoritmia e Estruturas de Dados
+                                              2025/26
+                                     DEISI World Meter
+                                      Primeira Parte
+                                           v1.0.0
+
+
+
+    Como entregar - Drop Project
+
+
+Os alunos terão acesso a uma página no Drop Project a partir da qual poderão submeter o
+seu projeto e obter um relatório sobre os testes aplicados ao mesmo.
+
+O DP da primeira parte do projeto estará disponível no URL seguinte:
+
+​        https://deisi.ulusofona.pt/drop-project/upload/aed-2526-projecto-p1
+
+
+
+    Filosofia do uso do DP
+
+
+O objectivo do DP não é servir de guião àquilo que os alunos têm que implementar. Os alunos
+devem implementar o projecto de forma autónoma tendo apenas em conta o enunciado e usar
+o DP apenas para validar que estão no bom caminho. Nas empresas nas quais um dia irão
+trabalhar não vão ter o DP para vos ajudar. Nesse sentido, decidimos limitar as submissões ao
+DP: passam a poder fazer uma submissão a cada 20 minutos (isto é, têm que esperar 20 min
+até que possam fazer nova submissão).
+
+
+
+    Prazo de entrega
+
+
+A data limite de entrega desta primeira parte é o dia 19 de Abril de 2026, pelas 23:55 (hora de
+Lisboa, Portugal).
+
+Não serão aceites trabalhos após essa data e hora.
+
+
+
+    Avaliação
+
+
+A avaliação do projeto será dividida pelas 2 partes:
+
+      ●​ Nas duas partes existirão baterias de testes automáticos implementadas no sistema
+         Drop Project ([DP]) que irão avaliar o projeto do ponto de vista funcional.
+
+
+
+                                                                                             9/11
+                     Universidade Lusófona de Humanidades e Tecnologias
+                               Algoritmia e Estruturas de Dados
+                                            2025/26
+                                   DEISI World Meter
+                                    Primeira Parte
+                                         v1.0.0
+
+
+   ●​ Existirá uma nota em cada parte do projeto.
+
+   ●​ Na primeira parte do projeto existe a nota mínima de 8 (oito) valores.
+         ○​ Quem não alcançar essa nota mínima ficará excluído da avaliação de primeira
+             época.
+
+   ●​ Após a entrega final, será atribuída ao projeto uma nota final quantitativa, que será
+      calculada considerando a seguinte fórmula:
+
+          ○​ 0.25 * Nota_Parte_1 + 0.75 * Nota_Parte_2
+
+   ●​ Na nota final a nota mínima será de 9.5 valores.
+
+   ●​ Existirá uma defesa individual presencial do projeto, após entrega da parte 2. Durante
+      esta defesa individual, será pedido ao aluno que faça alterações ao código para dar
+      resposta a alterações aos requisitos. Da discussão presencial de cada aluno, resultará
+      uma nota de 0 a 100%, que será aplicada à nota do projeto.
+
+
+
+Cotações da primeira parte
+
+
+Item                            Descrição                                     Cotação
+
+Componente funcional            Testes automáticos do DP.                     14
+
+Avaliação do Professor          Os Professores irão realizar testes extra     3
+                                das funcionalidades a implementar.
+
+Qualidade do código             Alguns indicadores da qualidade de            1
+(checkstyle)                    código como variáveis com nomes
+                                auto-explicativos ou funções que não
+                                sejam demasiado grandes
+
+Testes automáticos              Ver secção “Testes unitários automáticos”     2
+
+
+
+
+                                                                                              10/11
+                   Universidade Lusófona de Humanidades e Tecnologias
+                             Algoritmia e Estruturas de Dados
+                                          2025/26
+                                  DEISI World Meter
+                                   Primeira Parte
+                                        v1.0.0
+
+
+
+
+ Cópias
+
+
+Trabalhos que sejam identificados como cópias serão anulados e os alunos que os submetam
+terão nota zero (0).
+
+Uma cópia numa das entregas intermédias afastará os alunos (pelo menos) da restante
+avaliação de primeira época, podendo inclusivamente ter efeitos nas restantes épocas.
+
+Notem que, em caso de cópia, serão penalizados quer os alunos que copiarem, quer os
+alunos que deixarem copiar.
+
+Nesse sentido, recomendamos que não partilhem o código do vosso projecto (total ou
+parcialmente). Se querem ajudar colegas em dificuldade, expliquem-lhes o que têm que fazer,
+não lhes forneçam o vosso código, pois assim eles não estão a aprender!
+
+A decisão sobre se um trabalho é uma cópia cabe exclusivamente aos docentes da unidade
+curricular.
+
+
+
+
+                                            FIM
+
+
+
+
+                                                                                        11/11
