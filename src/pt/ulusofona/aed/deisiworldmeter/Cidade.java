@@ -1,17 +1,18 @@
 package pt.ulusofona.aed.deisiworldmeter;
 
 public class Cidade {
-    String alfa2;
+    String codigoAlfa2DoPais;
     String nome;
-    String regiao;
-    int populacao;
+    String codigoRegiao;
+    double populacao;
     double latitude;
     double longitude;
 
-    public Cidade(String alfa2, String nome, String regiao, int populacao, double latitude, double longitude) {
-        this.alfa2 = alfa2.toUpperCase().trim();
-        this.nome = nome.trim();
-        this.regiao = regiao.trim();
+    public Cidade(String codigoAlfa2DoPais, String nome, String codigoRegiao,
+                  double populacao, double latitude, double longitude) {
+        this.codigoAlfa2DoPais = codigoAlfa2DoPais;
+        this.nome = nome;
+        this.codigoRegiao = codigoRegiao;
         this.populacao = populacao;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -19,6 +20,7 @@ public class Cidade {
 
     @Override
     public String toString() {
-        return this.nome + " | " + this.alfa2 + " | " + this.regiao + " | " + this.populacao + " | (" + this.latitude + "," + this.longitude + ")";
+        return nome + " | " + codigoAlfa2DoPais.toUpperCase() + " | " + codigoRegiao + " | " +
+                (int) populacao + " | (" + latitude + "," + longitude + ")";
     }
 }
