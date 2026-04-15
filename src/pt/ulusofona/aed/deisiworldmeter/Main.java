@@ -258,19 +258,6 @@ public class Main {
             return;
         }
 
-        System.out.println("=== PAÍSES ===");
-        ArrayList<Object> paises = getObjects(TipoEntidade.PAIS);
-        for (int i = 0; i < paises.size(); i++) {
-            System.out.println(paises.get(i));
-        }
-
-        System.out.println("\n=== CIDADES ===");
-        ArrayList<Object> cidades = getObjects(TipoEntidade.CIDADE);
-        for (int i = 0; i < cidades.size(); i++) {
-           System.out.println(cidades.get(i));
-        }
-
-        System.out.println("\n=== INPUT INVÁLIDO ===");
         ArrayList<Object> invalidos = getObjects(TipoEntidade.INPUT_INVALIDO);
         for (int i = 0; i < invalidos.size(); i++) {
             System.out.println(invalidos.get(i));

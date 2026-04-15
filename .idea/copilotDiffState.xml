@@ -11,14 +11,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/src/pt/ulusofona/aed/deisiworldmeter/TipoEntidade.java">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/src/pt/ulusofona/aed/deisiworldmeter/TipoEntidade.java" />
-              <option name="updatedContent" value="package pt.ulusofona.aed.deisiworldmeter;&#10;&#10;public enum TipoEntidade {&#10;    PAIS, CIDADE, DADOS_DEMOGRAFICOS, INPUT_INVALIDO&#10;}&#10;" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
       </map>
     </option>
   </component>
