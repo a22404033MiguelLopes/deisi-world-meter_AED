@@ -6,37 +6,30 @@ import java.util.Scanner;
 
 public class Main {
 
-    // Listas onde guardamos os dados válidos
     static ArrayList<Pais> listaDePaises = new ArrayList<>();
     static ArrayList<Cidade> listaDeCidades = new ArrayList<>();
 
-    // Estatísticas de cada ficheiro (para o INPUT_INVALIDO)
     static EstatisticasFicheiro estatisticasPaises;
     static EstatisticasFicheiro estatisticasCidades;
     static EstatisticasFicheiro estatisticasPopulacao;
 
     public static boolean parseFiles(File pasta) {
-        // Limpar dados de leituras anteriores
         listaDePaises.clear();
         listaDeCidades.clear();
 
-        // Construir os caminhos para cada ficheiro
         File ficheiroPaises = new File(pasta, "paises.csv");
         File ficheiroCidades = new File(pasta, "cidades.csv");
         File ficheiroPopulacao = new File(pasta, "populacao.csv");
 
-        // Se algum ficheiro não existir, retorna false
         if (!ficheiroPaises.exists() || !ficheiroCidades.exists() || !ficheiroPopulacao.exists()) {
             return false;
         }
 
-        // Inicializar estatísticas
         estatisticasPaises = new EstatisticasFicheiro("paises.csv");
         estatisticasCidades = new EstatisticasFicheiro("cidades.csv");
         estatisticasPopulacao = new EstatisticasFicheiro("populacao.csv");
 
-        // Ler cada ficheiro pela ordem correta
-        // (países primeiro, pois as cidades e população dependem deles)
+
         lerFicheiroPaises(ficheiroPaises);
         lerFicheiroCidades(ficheiroCidades);
         lerFicheiroPopulacao(ficheiroPopulacao);
@@ -48,12 +41,11 @@ public class Main {
         try {
             Scanner leitor = new Scanner(ficheiro);
 
-            // Saltar o cabeçalho
             if (leitor.hasNextLine()) {
                 leitor.nextLine();
             }
 
-            int numeroLinha = 0;
+            int numeroLinha = 1;
 
             while (leitor.hasNextLine()) {
                 String linha = leitor.nextLine();
@@ -61,7 +53,6 @@ public class Main {
 
                 String[] partes = linha.split(",");
 
-                // Verificar se tem colunas suficientes
                 if (partes.length < 4) {
                     estatisticasPaises.registarLinhaInvalida(numeroLinha);
                     continue;
@@ -73,8 +64,12 @@ public class Main {
                     String codigoAlfa3 = partes[2].trim();
                     String nome = partes[3].trim();
 
-                    // Verificar se algum campo está vazio
                     if (codigoAlfa2.isEmpty() || codigoAlfa3.isEmpty() || nome.isEmpty()) {
+                        estatisticasPaises.registarLinhaInvalida(numeroLinha);
+                        continue;
+                    }
+
+                    if (paisExisteComId(id) || paisExisteComAlfa2(codigoAlfa2) || paisExisteComAlfa3(codigoAlfa3)) {
                         estatisticasPaises.registarLinhaInvalida(numeroLinha);
                         continue;
                     }
@@ -83,7 +78,6 @@ public class Main {
                     estatisticasPaises.linhasValidas++;
 
                 } catch (NumberFormatException e) {
-                    // O id não é um número válido
                     estatisticasPaises.registarLinhaInvalida(numeroLinha);
                 }
             }
@@ -98,12 +92,11 @@ public class Main {
         try {
             Scanner leitor = new Scanner(ficheiro);
 
-            // Saltar o cabeçalho
             if (leitor.hasNextLine()) {
                 leitor.nextLine();
             }
 
-            int numeroLinha = 0;
+            int numeroLinha = 1;
 
             while (leitor.hasNextLine()) {
                 String linha = leitor.nextLine();
@@ -124,7 +117,7 @@ public class Main {
                     double latitude = Double.parseDouble(partes[4].trim());
                     double longitude = Double.parseDouble(partes[5].trim());
 
-                    // População vazia = linha inválida
+
                     if (populacaoTexto.isEmpty()) {
                         estatisticasCidades.registarLinhaInvalida(numeroLinha);
                         continue;
@@ -132,13 +125,11 @@ public class Main {
 
                     double populacao = Double.parseDouble(populacaoTexto);
 
-                    // Campos obrigatórios não podem estar vazios
-                    if (codigoAlfa2.isEmpty() || nome.isEmpty() || codigoRegiao.isEmpty()) {
+                    if (codigoAlfa2.isEmpty()) {
                         estatisticasCidades.registarLinhaInvalida(numeroLinha);
                         continue;
                     }
 
-                    // O alfa2 da cidade tem que corresponder a um país existente
                     if (!paisExisteComAlfa2(codigoAlfa2)) {
                         estatisticasCidades.registarLinhaInvalida(numeroLinha);
                         continue;
@@ -147,12 +138,6 @@ public class Main {
                     listaDeCidades.add(new Cidade(codigoAlfa2, nome, codigoRegiao, populacao, latitude, longitude));
                     estatisticasCidades.linhasValidas++;
 
-                    for (int i = 0; i < listaDePaises.size(); i++) {
-                        if (listaDePaises.get(i).codigoAlfa2.equalsIgnoreCase(codigoAlfa2)) {
-                            listaDePaises.get(i).numeroDeCidades++;
-                            break;
-                        }
-                    }
 
                 } catch (NumberFormatException e) {
                     estatisticasCidades.registarLinhaInvalida(numeroLinha);
@@ -169,12 +154,11 @@ public class Main {
         try {
             Scanner leitor = new Scanner(ficheiro);
 
-            // Saltar o cabeçalho
             if (leitor.hasNextLine()) {
                 leitor.nextLine();
             }
 
-            int numeroLinha = 0;
+            int numeroLinha = 1;
 
             while (leitor.hasNextLine()) {
                 String linha = leitor.nextLine();
@@ -194,17 +178,21 @@ public class Main {
                     long populacaoFeminina = Long.parseLong(partes[3].trim());
                     double densidade = Double.parseDouble(partes[4].trim());
 
-                    // O id tem que corresponder a um país existente
                     if (!paisExisteComId(id)) {
                         estatisticasPopulacao.registarLinhaInvalida(numeroLinha);
                         continue;
                     }
 
-                    // Linha válida - não guardamos os dados na Parte 1
                     estatisticasPopulacao.linhasValidas++;
 
+                    for (int i = 0; i < listaDePaises.size(); i++) {
+                        if (listaDePaises.get(i).id == id) {
+                            listaDePaises.get(i).numeroDeRegistosPopulacao++;
+                            break;
+                        }
+                    }
+
                 } catch (NumberFormatException e) {
-                    // Algum campo numérico é inválido (ex: "Medium" no lugar do ano)
                     estatisticasPopulacao.registarLinhaInvalida(numeroLinha);
                 }
             }
@@ -215,7 +203,6 @@ public class Main {
         }
     }
 
-    // Verifica se existe um país com o código alfa2 dado
     private static boolean paisExisteComAlfa2(String codigoAlfa2) {
         for (int i = 0; i < listaDePaises.size(); i++) {
             if (listaDePaises.get(i).codigoAlfa2.equalsIgnoreCase(codigoAlfa2)) {
@@ -225,7 +212,6 @@ public class Main {
         return false;
     }
 
-    // Verifica se existe um país com o id dado
     private static boolean paisExisteComId(int id) {
         for (int i = 0; i < listaDePaises.size(); i++) {
             if (listaDePaises.get(i).id == id) {
@@ -255,6 +241,15 @@ public class Main {
         return resultado;
     }
 
+    private static boolean paisExisteComAlfa3(String codigoAlfa3) {
+        for (int i = 0; i < listaDePaises.size(); i++) {
+            if (listaDePaises.get(i).codigoAlfa3.equalsIgnoreCase(codigoAlfa3)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void main(String[] args) {
         boolean resultado = parseFiles(new File("."));
 
@@ -272,7 +267,7 @@ public class Main {
         System.out.println("\n=== CIDADES ===");
         ArrayList<Object> cidades = getObjects(TipoEntidade.CIDADE);
         for (int i = 0; i < cidades.size(); i++) {
-            System.out.println(cidades.get(i));
+           System.out.println(cidades.get(i));
         }
 
         System.out.println("\n=== INPUT INVÁLIDO ===");
