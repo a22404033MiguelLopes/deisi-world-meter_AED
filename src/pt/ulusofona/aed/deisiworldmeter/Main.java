@@ -56,9 +56,12 @@ public class Main {
             if (cidadesPorPais.containsKey(alfa2) && !cidadesPorPais.get(alfa2).isEmpty()) {
                 paisesComCidades.add(p);
             } else {
-                paisPorId.remove(p.id);
-                paisPorAlfa2.remove(p.codigoAlfa2.toLowerCase());
-                paisPorAlfa3.remove(p.codigoAlfa3.toLowerCase());
+                estatisticasPaises.linhasValidas--;
+                estatisticasPaises.linhasInvalidas++;
+                if (estatisticasPaises.primeiraLinhaInvalida == -1
+                        || p.numeroLinha < estatisticasPaises.primeiraLinhaInvalida) {
+                    estatisticasPaises.primeiraLinhaInvalida = p.numeroLinha;
+                }
             }
         }
         listaDePaises = paisesComCidades;
@@ -128,6 +131,13 @@ public class Main {
                 resultado = getTopPopulationIncrease(anoInicio, anoFim);
                 break;
             }
+            case "GET_COUNTRIES_LOSING_POPULATION": {
+                String[] args = parametros.split(" ");
+                int anoInicio = Integer.parseInt(args[0]);
+                int anoFim = Integer.parseInt(args[1]);
+                resultado = getCountriesLosingPopulation(anoInicio, anoFim);
+                break;
+            }
             case "GET_DUPLICATE_CITIES_DIFFERENT_COUNTRIES":
                 resultado = getDuplicateCitiesDifferentCountries(Integer.parseInt(parametros));
                 break;
@@ -138,13 +148,35 @@ public class Main {
                 resultado = getCitiesAtDistance(distancia, nomePais);
                 break;
             }
+            case "GET_CITIES_AT_DISTANCE2": {
+                String[] args = parametros.split(" ", 2);
+                int distancia = Integer.parseInt(args[0]);
+                String nomePais = args[1].trim();
+                resultado = getCitiesAtDistance2(distancia, nomePais);
+                break;
+            }
             case "INSERT_CITY": {
-                String[] args = parametros.split(" ");
-                String alfa2 = args[0].trim();
-                String nomeCidade = args[1].trim();
-                String regiao = args[2].trim();
-                double populacao = Double.parseDouble(args[3].trim());
-                resultado = insertCity(alfa2, nomeCidade, regiao, populacao);
+                try {
+                    String[] args = parametros.split("\\s+");
+                    if (args.length < 4) {
+                        resultado = new Result(false, "Parametros invalidos", null);
+                        break;
+                    }
+                    String alfa2 = args[0].trim();
+                    double populacao = Double.parseDouble(args[args.length - 1].trim());
+                    String regiao = args[args.length - 2].trim();
+                    StringBuilder nomeCidadeSb = new StringBuilder();
+                    for (int i = 1; i < args.length - 2; i++) {
+                        if (i > 1) {
+                            nomeCidadeSb.append(" ");
+                        }
+                        nomeCidadeSb.append(args[i]);
+                    }
+                    String nomeCidade = nomeCidadeSb.toString().trim();
+                    resultado = insertCity(alfa2, nomeCidade, regiao, populacao);
+                } catch (Exception e) {
+                    resultado = new Result(false, "Parametros invalidos", null);
+                }
                 break;
             }
             case "REMOVE_COUNTRY":
@@ -154,9 +186,6 @@ public class Main {
                 return new Result(false, "Comando invalido", null);
         }
 
-        if (resultado.success && resultado.result != null && resultado.result.contains("\n")) {
-            resultado.result = resultado.result + "\n";
-        }
         return resultado;
     }
 
@@ -198,6 +227,7 @@ public class Main {
                     }
 
                     Pais novoPais = new Pais(id, codigoAlfa2, codigoAlfa3, nome);
+                    novoPais.numeroLinha = numeroLinha;
                     listaDePaises.add(novoPais);
                     paisPorId.put(id, novoPais);
                     paisPorAlfa2.put(codigoAlfa2.toLowerCase(), novoPais);
@@ -317,6 +347,13 @@ public class Main {
                         continue;
                     }
 
+                    Pais paisDoRegisto = paisPorId.get(id);
+                    String alfaDoRegisto = paisDoRegisto.codigoAlfa2.toLowerCase();
+                    if (!cidadesPorPais.containsKey(alfaDoRegisto) || cidadesPorPais.get(alfaDoRegisto).isEmpty()) {
+                        estatisticasPopulacao.registarLinhaInvalida(numeroLinha);
+                        continue;
+                    }
+
                     RegistoPopulacao registo = new RegistoPopulacao(id, ano, populacaoMasculina, populacaoFeminina, densidade);
                     listaDePopulacao.add(registo);
 
@@ -386,7 +423,6 @@ public class Main {
     }
 
     private static Result getCitiesByCountry(int n, String nomePais) {
-        // Encontrar o país pelo nome
         Pais pais = null;
         for (int i = 0; i < listaDePaises.size(); i++) {
             if (listaDePaises.get(i).nome.equalsIgnoreCase(nomePais)) {
@@ -408,10 +444,7 @@ public class Main {
         StringBuilder sb = new StringBuilder();
         int limite = Math.min(n, cidades.size());
         for (int i = 0; i < limite; i++) {
-            if (i > 0) {
-                sb.append("\n");
-            }
-            sb.append(cidades.get(i).nome);
+            sb.append(cidades.get(i).nome).append("\n");
         }
 
         return new Result(true, null, sb.toString());
@@ -433,7 +466,7 @@ public class Main {
             }
 
             if (pais == null) {
-                continue;
+                return new Result(true, null, "Pais invalido: " + nomePais);
             }
 
             ArrayList<RegistoPopulacao> registos = populacaoPorPais.get(pais.id);
@@ -453,7 +486,6 @@ public class Main {
     }
 
     private static Result getHistory(int anoInicio, int anoFim, String nomePais) {
-        // Encontrar o país pelo nome
         Pais pais = null;
         for (int i = 0; i < listaDePaises.size(); i++) {
             if (listaDePaises.get(i).nome.equalsIgnoreCase(nomePais)) {
@@ -472,7 +504,6 @@ public class Main {
         }
 
         StringBuilder sb = new StringBuilder();
-        boolean primeiraLinha = true;
 
         for (int ano = anoInicio; ano <= anoFim; ano++) {
             for (int i = 0; i < registos.size(); i++) {
@@ -480,11 +511,7 @@ public class Main {
                 if (registo.ano == ano) {
                     long mascK = registo.populacaoMasculina / 1000;
                     long femK = registo.populacaoFeminina / 1000;
-                    if (!primeiraLinha) {
-                        sb.append("\n");
-                    }
-                    sb.append(ano).append(":").append(mascK).append("k:").append(femK).append("k");
-                    primeiraLinha = false;
+                    sb.append(ano).append(":").append(mascK).append("k:").append(femK).append("k").append("\n");
                     break;
                 }
             }
@@ -499,7 +526,6 @@ public class Main {
 
     private static Result getMissingHistory(int anoInicio, int anoFim) {
         StringBuilder sb = new StringBuilder();
-        boolean primeiraLinha = true;
 
         for (int i = 0; i < listaDePaises.size(); i++) {
             Pais pais = listaDePaises.get(i);
@@ -525,11 +551,7 @@ public class Main {
             }
 
             if (temFalha) {
-                if (!primeiraLinha) {
-                    sb.append("\n");
-                }
-                sb.append(pais.codigoAlfa2.toLowerCase()).append(":").append(pais.nome);
-                primeiraLinha = false;
+                sb.append(pais.codigoAlfa2.toLowerCase()).append(":").append(pais.nome).append("\n");
             }
         }
 
@@ -571,13 +593,10 @@ public class Main {
         StringBuilder sb = new StringBuilder();
         int limite = Math.min(n, maisPopulosas.size());
         for (int i = 0; i < limite; i++) {
-            if (i > 0) {
-                sb.append("\n");
-            }
             Cidade c = maisPopulosas.get(i);
             Pais pais = paisPorAlfa2.get(c.codigoAlfa2DoPais.toLowerCase());
             String nomePais = pais != null ? pais.nome : c.codigoAlfa2DoPais;
-            sb.append(nomePais).append(":").append(c.nome).append(":").append((long) c.populacao);
+            sb.append(nomePais).append(":").append(c.nome).append(":").append((long) c.populacao).append("\n");
         }
 
         return new Result(true, null, sb.toString());
@@ -593,39 +612,42 @@ public class Main {
         }
 
         if (pais == null) {
-            return new Result(false, "Comando invalido", null);
+            return new Result(true, null, "");
         }
 
         ArrayList<Cidade> cidades = cidadesPorPais.get(pais.codigoAlfa2.toLowerCase());
         if (cidades == null || cidades.isEmpty()) {
-            return new Result(false, "Comando invalido", null);
+            return new Result(true, null, "");
         }
 
-        ArrayList<Cidade> ordenadas = new ArrayList<>(cidades);
+        ArrayList<Cidade> filtradas = new ArrayList<>();
+        for (int i = 0; i < cidades.size(); i++) {
+            if (cidades.get(i).populacao >= 10000) {
+                filtradas.add(cidades.get(i));
+            }
+        }
 
-        Cidade[] array = ordenadas.toArray(new Cidade[0]);
+        Cidade[] array = filtradas.toArray(new Cidade[0]);
         Arrays.sort(array, new java.util.Comparator<Cidade>() {
             public int compare(Cidade c1, Cidade c2) {
-                long popK1 = (long) c1.populacao / 1000;
-                long popK2 = (long) c2.populacao / 1000;
-                if (popK2 != popK1) {
-                    return Long.compare(popK2, popK1);
+                int popK1 = (int) c1.populacao / 1000;
+                int popK2 = (int) c2.populacao / 1000;
+                if (popK1 != popK2) {
+                    return Integer.compare(popK2, popK1);
                 }
-                return c1.nome.compareTo(c2.nome);
+                return c1.nome.compareToIgnoreCase(c2.nome);
             }
         });
-        ordenadas = new ArrayList<>(Arrays.asList(array));
 
-        int limite = (n == -1) ? ordenadas.size() : Math.min(n, ordenadas.size());
+        int limite = (n == -1 || n > array.length) ? array.length : n;
+        if (limite <= 0) {
+            return new Result(true, null, "");
+        }
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < limite; i++) {
-            if (i > 0) {
-                sb.append("\n");
-            }
-            Cidade c = ordenadas.get(i);
-            long popK = (long) c.populacao / 1000;
-            sb.append(c.nome).append(":").append(popK).append("K");
+            Cidade c = array[i];
+            sb.append(c.nome).append(":").append((int) c.populacao / 1000).append("K\n");
         }
 
         return new Result(true, null, sb.toString());
@@ -633,42 +655,21 @@ public class Main {
 
     private static Result getDuplicateCities(int minPopulacao) {
         StringBuilder sb = new StringBuilder();
-        boolean primeiraLinha = true;
+        HashMap<String, Boolean> nomesVistos = new HashMap<>();
 
-        for (int i = 0; i < listaDePaises.size(); i++) {
-            Pais pais = listaDePaises.get(i);
-            ArrayList<Cidade> cidades = cidadesPorPais.get(pais.codigoAlfa2.toLowerCase());
-
-            if (cidades == null || cidades.isEmpty()) {
+        for (int i = 0; i < listaDeCidades.size(); i++) {
+            Cidade c = listaDeCidades.get(i);
+            if (c.populacao < minPopulacao) {
                 continue;
             }
+            String nomeLower = c.nome.toLowerCase();
 
-            HashMap<String, ArrayList<Cidade>> cidadesPorNome = new HashMap<>();
-            for (int j = 0; j < cidades.size(); j++) {
-                Cidade c = cidades.get(j);
-                if (c.populacao < minPopulacao) {
-                    continue;
-                }
-                String nomeLower = c.nome.toLowerCase();
-                if (!cidadesPorNome.containsKey(nomeLower)) {
-                    cidadesPorNome.put(nomeLower, new ArrayList<>());
-                }
-                cidadesPorNome.get(nomeLower).add(c);
-            }
-
-            for (String nomeLower : cidadesPorNome.keySet()) {
-                ArrayList<Cidade> duplicadas = cidadesPorNome.get(nomeLower);
-                if (duplicadas.size() < 2) {
-                    continue;
-                }
-                for (int j = 0; j < duplicadas.size(); j++) {
-                    if (!primeiraLinha) {
-                        sb.append("\n");
-                    }
-                    Cidade c = duplicadas.get(j);
-                    sb.append(c.nome).append(" (").append(pais.nome).append(",").append(c.codigoRegiao).append(")");
-                    primeiraLinha = false;
-                }
+            if (!nomesVistos.containsKey(nomeLower)) {
+                nomesVistos.put(nomeLower, true);
+            } else {
+                Pais pais = paisPorAlfa2.get(c.codigoAlfa2DoPais.toLowerCase());
+                String nomePais = pais != null ? pais.nome : c.codigoAlfa2DoPais;
+                sb.append(c.nome).append(" (").append(nomePais).append(",").append(c.codigoRegiao).append(")").append("\n");
             }
         }
 
@@ -677,7 +678,6 @@ public class Main {
 
     private static Result getCountriesGenderGap(double minGap) {
         StringBuilder sb = new StringBuilder();
-        boolean primeiraLinha = true;
 
         for (int i = 0; i < listaDePaises.size(); i++) {
             Pais pais = listaDePaises.get(i);
@@ -710,13 +710,9 @@ public class Main {
             double gap = (Math.abs(masc - fem) / (double) total) * 100;
 
             if (gap >= minGap) {
-                if (!primeiraLinha) {
-                    sb.append("\n");
-                }
-                long gapTruncado = (long) (gap * 100);
-                String gapStr = (gapTruncado / 100) + "." + String.format("%02d", gapTruncado % 100);
-                sb.append(pais.nome).append(":").append(gapStr);
-                primeiraLinha = false;
+                long gapArredondado = Math.round(gap * 100);
+                String gapStr = (gapArredondado / 100) + "." + String.format("%02d", gapArredondado % 100);
+                sb.append(pais.nome).append(":").append(gapStr).append("\n");
             }
         }
 
@@ -727,8 +723,9 @@ public class Main {
     }
 
     private static Result getTopPopulationIncrease(int anoInicio, int anoFim) {
-        ArrayList<Pais> paisesAumento = new ArrayList<>();
+        ArrayList<String> nomesPaises = new ArrayList<>();
         ArrayList<Double> percentagens = new ArrayList<>();
+        ArrayList<int[]> pares = new ArrayList<>();
 
         for (int i = 0; i < listaDePaises.size(); i++) {
             Pais pais = listaDePaises.get(i);
@@ -738,40 +735,43 @@ public class Main {
                 continue;
             }
 
-            RegistoPopulacao registoInicio = null;
-            RegistoPopulacao registoFim = null;
-
+            ArrayList<RegistoPopulacao> registosNoIntervalo = new ArrayList<>();
             for (int j = 0; j < registos.size(); j++) {
-                if (registos.get(j).ano == anoInicio) {
-                    registoInicio = registos.get(j);
-                }
-                if (registos.get(j).ano == anoFim) {
-                    registoFim = registos.get(j);
+                int ano = registos.get(j).ano;
+                if (ano >= anoInicio && ano <= anoFim) {
+                    registosNoIntervalo.add(registos.get(j));
                 }
             }
 
-            if (registoInicio == null || registoFim == null) {
-                continue;
+            for (int a = 0; a < registosNoIntervalo.size(); a++) {
+                for (int b = 0; b < registosNoIntervalo.size(); b++) {
+                    RegistoPopulacao rA = registosNoIntervalo.get(a);
+                    RegistoPopulacao rB = registosNoIntervalo.get(b);
+                    if (rA.ano >= rB.ano) {
+                        continue;
+                    }
+
+                    long popA = rA.getPopulacaoTotal();
+                    long popB = rB.getPopulacaoTotal();
+
+                    if (popB == 0) {
+                        continue;
+                    }
+
+                    double aumento = ((double)(popB - popA) / popB) * 100;
+
+                    if (aumento < 0) {
+                        continue;
+                    }
+
+                    nomesPaises.add(pais.nome);
+                    percentagens.add(aumento);
+                    pares.add(new int[]{rA.ano, rB.ano});
+                }
             }
-
-            long popInicio = registoInicio.getPopulacaoTotal();
-            long popFim = registoFim.getPopulacaoTotal();
-
-            if (popFim == 0) {
-                continue;
-            }
-
-            double aumento = ((double)(popFim - popInicio) / popFim) * 100;
-
-            if (aumento < 0) {
-                continue;
-            }
-
-            paisesAumento.add(pais);
-            percentagens.add(aumento);
         }
 
-        Integer[] indices = new Integer[paisesAumento.size()];
+        Integer[] indices = new Integer[nomesPaises.size()];
         for (int i = 0; i < indices.length; i++) {
             indices[i] = i;
         }
@@ -783,27 +783,18 @@ public class Main {
             }
         });
 
-        ArrayList<Pais> paisesOrdenados = new ArrayList<>();
-        ArrayList<Double> percentagensOrdenadas = new ArrayList<>();
-        for (int i = 0; i < indices.length; i++) {
-            paisesOrdenados.add(paisesAumento.get(indices[i]));
-            percentagensOrdenadas.add(percentagens.get(indices[i]));
-        }
-
-        int limite = Math.min(5, paisesOrdenados.size());
+        int limite = Math.min(5, indices.length);
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < limite; i++) {
-            if (i > 0) {
-                sb.append("\n");
-            }
-            double perc = percentagensOrdenadas.get(i);
+            int idx = indices[i];
+            double perc = percentagens.get(idx);
             long percArredondada = Math.round(perc * 100);
             String percStr = (percArredondada / 100) + "." + String.format("%02d", percArredondada % 100);
-            sb.append(paisesOrdenados.get(i).nome)
-                    .append(":").append(anoInicio)
-                    .append("-").append(anoFim)
-                    .append(":").append(percStr).append("%");
+            sb.append(nomesPaises.get(idx))
+                    .append(":").append(pares.get(idx)[0])
+                    .append("-").append(pares.get(idx)[1])
+                    .append(":").append(percStr).append("%").append("\n");
         }
 
         return new Result(true, null, sb.toString());
@@ -825,7 +816,6 @@ public class Main {
         }
 
         StringBuilder sb = new StringBuilder();
-        boolean primeiraLinha = true;
 
         for (String nomeLower : cidadesPorNome.keySet()) {
             ArrayList<Cidade> grupo = cidadesPorNome.get(nomeLower);
@@ -854,10 +844,6 @@ public class Main {
             Arrays.sort(paisesArray);
             paisesDistintos = new ArrayList<>(Arrays.asList(paisesArray));
 
-            if (!primeiraLinha) {
-                sb.append("\n");
-            }
-
             sb.append(grupo.get(0).nome).append(": ");
 
             for (int i = 0; i < paisesDistintos.size(); i++) {
@@ -866,7 +852,7 @@ public class Main {
                 }
                 sb.append(paisesDistintos.get(i));
             }
-            primeiraLinha = false;
+            sb.append("\n");
         }
 
         return new Result(true, null, sb.toString());
@@ -893,7 +879,7 @@ public class Main {
         }
 
         if (pais == null) {
-            return new Result(true, null, "");
+            return new Result(false, "Comando invalido", null);
         }
 
         ArrayList<Cidade> cidades = cidadesPorPais.get(pais.codigoAlfa2.toLowerCase());
@@ -905,7 +891,6 @@ public class Main {
         double limiteSuperior = distancia + 0.999;
 
         StringBuilder sb = new StringBuilder();
-        boolean primeiraLinha = true;
 
         for (int i = 0; i < cidades.size(); i++) {
             for (int j = i + 1; j < cidades.size(); j++) {
@@ -915,17 +900,90 @@ public class Main {
                 double dist = haversine(c1.latitude, c1.longitude, c2.latitude, c2.longitude);
 
                 if (dist >= limiteInferior && dist <= limiteSuperior) {
-                    if (!primeiraLinha) {
-                        sb.append("\n");
-                    }
                     if (c1.nome.compareTo(c2.nome) <= 0) {
                         sb.append(c1.nome).append("->").append(c2.nome);
                     } else {
                         sb.append(c2.nome).append("->").append(c1.nome);
                     }
-                    primeiraLinha = false;
+                    sb.append("\n");
                 }
             }
+        }
+
+        return new Result(true, null, sb.toString());
+    }
+
+    private static Result getCitiesAtDistance2(int distancia, String nomePais) {
+        Pais pais = null;
+        for (int i = 0; i < listaDePaises.size(); i++) {
+            if (listaDePaises.get(i).nome.equalsIgnoreCase(nomePais)) {
+                pais = listaDePaises.get(i);
+                break;
+            }
+        }
+
+        if (pais == null) {
+            for (Pais p : paisPorId.values()) {
+                if (p.nome.equalsIgnoreCase(nomePais)) {
+                    pais = p;
+                    break;
+                }
+            }
+        }
+
+        if (pais == null) {
+            return new Result(false, "Pais invalido", null);
+        }
+
+        String alfa2Pais = pais.codigoAlfa2.toLowerCase();
+        ArrayList<Cidade> cidadesDoPais = cidadesPorPais.get(alfa2Pais);
+        if (cidadesDoPais == null || cidadesDoPais.isEmpty()) {
+            return new Result(true, null, "");
+        }
+
+        double limiteInferior = distancia - 0.999;
+        double limiteSuperior = distancia + 0.999;
+        double maxLatDelta = (limiteSuperior / 111.0) + 0.01;
+
+        ArrayList<String> pares = new ArrayList<>();
+
+        for (int i = 0; i < cidadesDoPais.size(); i++) {
+            Cidade c1 = cidadesDoPais.get(i);
+            double maxLonDelta = (limiteSuperior / (111.0 * Math.max(0.01, Math.cos(Math.toRadians(c1.latitude))))) + 0.01;
+
+            for (int j = 0; j < listaDeCidades.size(); j++) {
+                Cidade c2 = listaDeCidades.get(j);
+                if (c2.codigoAlfa2DoPais.equalsIgnoreCase(alfa2Pais)) {
+                    continue;
+                }
+
+                if (Math.abs(c1.latitude - c2.latitude) > maxLatDelta) {
+                    continue;
+                }
+                if (Math.abs(c1.longitude - c2.longitude) > maxLonDelta) {
+                    continue;
+                }
+
+                double dist = haversine(c1.latitude, c1.longitude, c2.latitude, c2.longitude);
+
+                if (dist >= limiteInferior && dist <= limiteSuperior) {
+                    String par;
+                    if (c1.nome.compareTo(c2.nome) <= 0) {
+                        par = c1.nome + "->" + c2.nome;
+                    } else {
+                        par = c2.nome + "->" + c1.nome;
+                    }
+                    pares.add(par);
+                }
+            }
+        }
+
+        String[] arr = pares.toArray(new String[0]);
+        Arrays.sort(arr);
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < arr.length; i++) {
+            sb.append(arr[i]).append("\n");
         }
 
         return new Result(true, null, sb.toString());
@@ -934,7 +992,23 @@ public class Main {
     private static Result insertCity(String alfa2, String nomeCidade, String regiao, double populacao) {
         Pais pais = paisPorAlfa2.get(alfa2.toLowerCase());
         if (pais == null) {
-            return new Result(false, "Invalid country", null);
+            for (Pais p : paisPorId.values()) {
+                if (p.codigoAlfa2.equalsIgnoreCase(alfa2)) {
+                    pais = p;
+                    break;
+                }
+            }
+        }
+        if (pais == null) {
+            for (int i = 0; i < listaDePaises.size(); i++) {
+                if (listaDePaises.get(i).codigoAlfa2.equalsIgnoreCase(alfa2)) {
+                    pais = listaDePaises.get(i);
+                    break;
+                }
+            }
+        }
+        if (pais == null) {
+            return new Result(true, null, "Pais invalido");
         }
 
         Cidade novaCidade = new Cidade(alfa2, nomeCidade, regiao, populacao, 0.0, 0.0);
@@ -945,6 +1019,10 @@ public class Main {
             cidadesPorPais.put(alfa2Lower, new ArrayList<>());
         }
         cidadesPorPais.get(alfa2Lower).add(novaCidade);
+
+        if (!listaDePaises.contains(pais)) {
+            listaDePaises.add(pais);
+        }
 
         return new Result(true, null, "Inserido com sucesso");
     }
@@ -959,7 +1037,16 @@ public class Main {
         }
 
         if (pais == null) {
-            return new Result(false, "Comando invalido", null);
+            for (Pais p : paisPorId.values()) {
+                if (p.nome.equalsIgnoreCase(nomePais)) {
+                    pais = p;
+                    break;
+                }
+            }
+        }
+
+        if (pais == null) {
+            return new Result(true, null, "Pais invalido");
         }
 
         String alfa2Lower = pais.codigoAlfa2.toLowerCase();
@@ -987,6 +1074,68 @@ public class Main {
         listaDePaises.remove(pais);
 
         return new Result(true, null, "Removido com sucesso");
+    }
+
+    private static class PaisPerda {
+        Pais pais;
+        long perda;
+        PaisPerda(Pais pais, long perda) {
+            this.pais = pais;
+            this.perda = perda;
+        }
+    }
+
+    private static Result getCountriesLosingPopulation(int anoInicio, int anoFim) {
+        if (anoInicio >= anoFim) {
+            return new Result(true, null, "");
+        }
+
+        ArrayList<PaisPerda> resultados = new ArrayList<>();
+
+        for (int i = 0; i < listaDePaises.size(); i++) {
+            Pais pais = listaDePaises.get(i);
+            ArrayList<RegistoPopulacao> registos = populacaoPorPais.get(pais.id);
+            if (registos == null) {
+                continue;
+            }
+
+            long popInicio = -1;
+            long popFim = -1;
+            for (int j = 0; j < registos.size(); j++) {
+                RegistoPopulacao reg = registos.get(j);
+                if (reg.ano == anoInicio) {
+                    popInicio = reg.getPopulacaoTotal();
+                } else if (reg.ano == anoFim) {
+                    popFim = reg.getPopulacaoTotal();
+                }
+            }
+
+            if (popInicio < 0 || popFim < 0) {
+                continue;
+            }
+            if (popInicio <= popFim) {
+                continue;
+            }
+
+            resultados.add(new PaisPerda(pais, popInicio - popFim));
+        }
+
+        PaisPerda[] arr = resultados.toArray(new PaisPerda[0]);
+        Arrays.sort(arr, new java.util.Comparator<PaisPerda>() {
+            public int compare(PaisPerda a, PaisPerda b) {
+                if (a.perda != b.perda) {
+                    return Long.compare(b.perda, a.perda);
+                }
+                return a.pais.nome.compareToIgnoreCase(b.pais.nome);
+            }
+        });
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < arr.length; i++) {
+            sb.append(arr[i].pais.nome).append(":").append(arr[i].perda).append("\n");
+        }
+
+        return new Result(true, null, sb.toString());
     }
 
     public static void main(String[] args) {
@@ -1017,8 +1166,10 @@ public class Main {
         System.out.println("  GET_TOP_POPULATION_INCREASE <year-start> <year-end>");
         System.out.println("  GET_DUPLICATE_CITIES_DIFFERENT_COUNTRIES <min-population>");
         System.out.println("  GET_CITIES_AT_DISTANCE <distance> <country-name>");
+        System.out.println("  GET_CITIES_AT_DISTANCE2 <distance> <country-name>");
         System.out.println("  INSERT_CITY <alfa2> <city-name> <region> <population>");
         System.out.println("  REMOVE_COUNTRY <country-name>");
+        System.out.println("  GET_COUNTRIES_LOSING_POPULATION <year-start> <year-end>");
         System.out.println("  HELP");
         System.out.println("  QUIT");
         System.out.println("------------------------");

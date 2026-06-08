@@ -6,6 +6,7 @@ public class Pais {
     String codigoAlfa3;
     String nome;
     int numeroDeRegistosPopulacao;
+    int numeroLinha;
 
     public Pais(int id, String codigoAlfa2, String codigoAlfa3, String nome) {
         this.id = id;
